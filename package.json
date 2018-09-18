@@ -1,0 +1,17 @@
+{
+  "name": "cloudant",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha --timeout 10000"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@cloudant/cloudant": "^2.3.0",
+    "assert": "^1.4.1",
+    "mocha": "^5.2.0",
+    "should": "^13.2.3"
+  }
+}
