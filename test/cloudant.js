@@ -2,6 +2,7 @@
 https://github.com/cloudant/nodejs-cloudant#cloudant-query
 https://www.npmjs.com/package/@cloudant/cloudant
 https://github.com/cloudant-labs/cloudant-nano
+https://console.bluemix.net/docs/services/Cloudant/basics/index.html#cloudant-basics
 */
 
 var should = require('should');
@@ -31,7 +32,7 @@ describe("Cloudant database functions", () => {
         });
     });
 
-    it("replication.enable function", (done) => {
+    it.skip("replication.enable function", (done) => {
         const url = "https://14d0e96f-539c-413a-b1b2-dfa47baaaf92-bluemix:24d869ab9780da53caa7cee957d62359868704f69497f65cce05d4b46d04f633@14d0e96f-539c-413a-b1b2-dfa47baaaf92-bluemix.cloudant.com";
         const dbName = `animaldb`;
         const dbURL = `${url}/${dbName}`;
@@ -43,6 +44,27 @@ describe("Cloudant database functions", () => {
             }
             body.ok.should.eql(true);
             done();
+        });
+    });
+
+    it("replication.query function", (done) => {
+        const url = "https://14d0e96f-539c-413a-b1b2-dfa47baaaf92-bluemix:24d869ab9780da53caa7cee957d62359868704f69497f65cce05d4b46d04f633@14d0e96f-539c-413a-b1b2-dfa47baaaf92-bluemix.cloudant.com";
+        const dbName = `animaldb`;
+        const dbURL = `${url}/${dbName}`;
+        const dbReplicaName = `animaldb-replica-2`;
+        const dbReplicaURL = `${url}/${dbReplicaName}`;
+        cloudant.db.replication.enable(dbURL, dbReplicaURL, { create_target: true }, (err, body) => {
+            if (err) {
+                throw err;
+            }
+            body.ok.should.eql(true);
+            cloudant.db.replication.query(body.id, (err, response) => {
+                if (err) {
+                    throw err;
+                }
+                console.log(response);
+                done();
+            });
         });
     });
 
@@ -58,13 +80,22 @@ describe("Cloudant database functions", () => {
                 throw err;
             }
             body.ok.should.eql(true);
-            cloudant.db.replication.disable(body.id, (error, reply) => {
-                if (error) {
-                    throw error;
-                }
-                console.log(reply);
-                done();
-            });
+            console.log(body);
+            setTimeout(function () {
+                cloudant.db.replication.query(body.id, (err, response) => {
+                    cloudant.db.replication.disable(body.id, (err, resp) => {
+                        console.log(error);
+                        console.log(reply);
+                        if (error) {
+                            throw error;
+                        }
+                        console.log(reply);
+                        done();
+                    });
+                });
+            }, 3000);
+
+
         });
     });
 
@@ -80,7 +111,7 @@ describe("Cloudant database functions", () => {
     });
 });
 
-describe.only("Cloudant document functions", () => {
+describe("Cloudant document functions", () => {
     before((done) => {
         const dbName = "testdb";
         cloudant.db.destroy(dbName, () => {
@@ -239,21 +270,20 @@ describe.only("Cloudant document functions", () => {
         });
     })
 
-    // TODO test why does it not work???
-    // it("Can copy document", (done) => {
-    //     const inputID = "Test2ID";
-    //     const outputID = "Test2IDcopy";
+    it("Can copy document", (done) => {
+        const inputID = "Test2ID";
+        const outputID = "Test2IDcopy";
 
-    //     db.copy(inputID, outputID, {overwrite: true}, (err, body, header) => {
-    //         if (err) {
-    //             throw err;
-    //         }
+        db.copy(inputID, outputID, (err, body, header) => {
+            if (err) {
+                throw err;
+            }
 
-    //         console.log(body);
-    //         console.log(header);
-    //         done();
-    //     });
-    // });
+            console.log(body);
+            console.log(header);
+            done();
+        });
+    });
 
     it("Returns registered indexes", (done) => {
         db.index(function (er, result) {
@@ -271,23 +301,172 @@ describe.only("Cloudant document functions", () => {
         });
     });
 
-    it("Find functionality", (done) => {
-        const titleValue = "title 2";
-        db.find({ selector: { title: titleValue } }, function (er, result) {
-            if (er) {
-                throw er;
-            }
+    // TODO query data from testdb
+    it("Search should work", (done) => {
+        done();
+    });
+});
 
-            console.log(`Found %d documents with name ${titleValue}`, result.docs.length);
-            for (var i = 0; i < result.docs.length; i++) {
-                console.log('  Doc id: %s', JSON.stringify(result.docs[i]));
-            }
+describe.only("Query", () => {
+    before((done) => {
+        // TODO could remove the saved db, and then replicate the original
+        const dbName = "movies-demo";
+        db = cloudant.use(dbName);
+        done();
+    });
 
+    it("Can query documents using number (greater than), but can't sort by 'Movie_year' (unless adding 'Movie_year' as a new index).", (done) => {
+        // I only need to add this index, because I want to sort by 'Movie_year'
+        const year = { name: "Movie_year", type: "json", index: { fields: ["Movie_year"] } };
+        db.index(year, (error, response) => {
+            console.log(error);
+            console.log(response);
+
+            const query = {
+                "selector": {
+                    "Movie_year": {
+                        "$gt": 2010
+                    }
+                },
+                "fields": ["_id", "_rev", "Movie_year", "Movie_name"],
+                "sort": [{ "Movie_year": "asc" }],
+                "limit": 10,
+                "skip": 0
+            };
+
+            db.find(query, (error, result) => {
+                console.log("error: " + error);
+                console.log("result: " + JSON.stringify(result));
+                done();
+            });
+        });
+    });
+
+    it("Selector basics", () => {
+        const query = {
+            "selector": {
+                "Person_name": "Adam Sandler",
+                "Movie_year": 2003
+            }
+        };
+
+        db.find(query, (error, result) => {
+            console.log("error: " + error);
+            console.log("result: " + JSON.stringify(result));
             done();
         });
-    }); 
+    });
 
-    // TODO query data from testdb
+    it("$and, $or and $eq operators", () => {
+        const query = {
+            "selector": {
+                "$and": [
+                    {
+                        "Person_name": {
+                            "$or": ["Adam Sandler", "Abigail Breslin"]
+                        }
+                    },
+                    {
+                        "Movie_genre": {
+                            "$eq": "CDY"
+                        }
+                    }
+                ]
+            },
+            "fields": ["_id", "_rev", "Movie_year", "Person_name", "Movie_name", "Movie_genre"]
+        };
+
+        db.find(query, (error, result) => {
+            console.log("error: " + error);
+            console.log("result: " + JSON.stringify(result));
+            done();
+        });
+    });
+
+    it("$and, $or and $eq operators 2", () => {
+        const query = {
+            "selector": {
+                "Movie_year": 2006,
+                "$or": [
+                    { "Person_name": "Adam Sandler" },
+                    { "Person_name": "Abigail Breslin" }
+                ]
+            },
+            "fields": ["_id", "_rev", "Movie_year", "Person_name", "Movie_name", "Movie_genre"]
+        };
+
+        db.find(query, (error, result) => {
+            console.log("error: " + error);
+            console.log("result: " + JSON.stringify(result));
+            done();
+        });
+    });
+
+    it("$and, $nor and $eq operator", () => {
+        const query = {
+            "selector": {
+                "$and": [
+                    {
+                        "Person_name": {
+                            "$or": ["Adam Sandler", "Abigail Breslin"]
+                        }
+                    },
+                    {
+                        "Movie_year": {
+                            "$gte": 2000
+                        },
+                        "Movie_year": {
+                            "$lte": 2010
+                        },
+                        "$nor": [
+                            { "Movie_year": 2001 },
+                            { "Movie_year": 2003 },
+                            { "Movie_year": 2006 }
+                        ]
+                    }
+                ]
+            },
+            "fields": ["_id", "_rev", "Movie_year", "Person_name", "Movie_name", "Movie_genre"]
+        };
+
+        db.find(query, (error, result) => {
+            console.log("error: " + error);
+            console.log("result: " + JSON.stringify(result));
+            done();
+        });
+    });
+
+    it("$and, $not and $eq operator", () => {
+        const query = {
+            "selector": {
+                "$and": [
+                    {
+                        "Person_name": {
+                            "$or": ["Adam Sandler", "Abigail Breslin"]
+                        }
+                    },
+                    {
+                        "Movie_year": {
+                            "$gte": 2000
+                        },
+                        "Movie_year": {
+                            "$lte": 2010
+                        },
+                        "$not": {
+                            "Movie_year": 2003
+                        }
+                    }
+                ]
+            },
+            "fields": ["_id", "_rev", "Movie_year", "Person_name", "Movie_name", "Movie_genre"]
+        };
+
+        db.find(query, (error, result) => {
+            console.log("error: " + error);
+            console.log("result: " + JSON.stringify(result));
+            done();
+        });
+    });
 });
 
 describe("Cloudant views and design functions", () => {
@@ -358,8 +537,102 @@ describe("Cloudant search", () => {
 
     it("search also works on views", (done) => {
         db.search('views101', 'animals', { q: "zebra" }, function (err, body) {
-            console.log(err);
-            console.log(body);
+            if (err) {
+                throw err;
+            }
+            body.rows.forEach(function (doc) {
+                console.log(JSON.stringify(doc));
+            });
+            done();
+        });
+    });
+
+    it("search 1", (done) => {
+        db.search('views101', 'animals', { q: "class: bird" }, function (err, body) {
+            if (err) {
+                throw err;
+            }
+            body.rows.forEach(function (doc) {
+                console.log(JSON.stringify(doc));
+            });
+            done();
+        });
+    });
+
+    it("search 2", (done) => {
+        db.search('views101', 'animals', { q: "l*" }, function (err, body) {
+            if (err) {
+                throw err;
+            }
+            body.rows.forEach(function (doc) {
+                console.log(JSON.stringify(doc));
+            });
+            done();
+        });
+    });
+
+    it("search 3", (done) => {
+        db.search('views101', 'animals', { q: "class:bird AND diet:carnivore" }, function (err, body) {
+            if (err) {
+                throw err;
+            }
+            body.rows.forEach(function (doc) {
+                console.log(JSON.stringify(doc));
+            });
+            done();
+        });
+    });
+
+    it("search 4", (done) => {
+        db.search('views101', 'animals', { q: "l* AND diet:herbivore" }, function (err, body) {
+            if (err) {
+                throw err;
+            }
+            body.rows.forEach(function (doc) {
+                console.log(JSON.stringify(doc));
+            });
+            done();
+        });
+    });
+
+    it("search 5", (done) => {
+        db.search('views101', 'animals', { q: "min_length:[1 TO 3] AND diet:herbivore" }, function (err, body) {
+            if (err) {
+                throw err;
+            }
+            body.rows.forEach(function (doc) {
+                console.log(JSON.stringify(doc));
+            });
+            done();
+        });
+    });
+
+    it("search 6", (done) => {
+        db.search('views101', 'animals', { q: "diet:herbivore AND min_length:[-Infinity TO 2]" }, function (err, body) {
+            if (err) {
+                throw err;
+            }
+            body.rows.forEach(function (doc) {
+                console.log(JSON.stringify(doc));
+            });
+            done();
+        });
+    });
+
+    it("search 7", (done) => {
+        db.search('views101', 'animals', { q: "class:mammal AND min_length:[1.5 TO Infinity]" }, function (err, body) {
+            if (err) {
+                throw err;
+            }
+            body.rows.forEach(function (doc) {
+                console.log(JSON.stringify(doc));
+            });
+            done();
+        });
+    });
+
+    it("search 8", (done) => {
+        db.search('views101', 'animals', { q: "diet:(herbivore OR omnivore) AND class:mammal" }, function (err, body) {
             if (err) {
                 throw err;
             }
