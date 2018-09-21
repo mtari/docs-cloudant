@@ -6,6 +6,7 @@ Cloudant's service provides integrated data management, search, and analytics en
 
 **Recommended:**
 You can read more about [Apache CouchDB](https://en.wikipedia.org/wiki/Apache_CouchDB)
+
 You can also read the [official documentation](https://console.bluemix.net/docs/services/Cloudant/basics/index.html#ibm-cloudant-basics)
 
 # HTTP API
@@ -17,3 +18,14 @@ Specific details about how IBM Cloudant uses HTTP are provided in the [HTTP topi
 # Cloudant Node.js Client
 We use [@cloudant/cloudant](https://www.npmjs.com/package/@cloudant/cloudant) in our applications. This library is the offical Cloudant library for Node.js.
 
+## API Reference
+### Database functions
+#### cloudant.db.create(name, [callback])
+creates a database with the given name.
+```
+cloudant.db.create('alice', function(err, body) {
+  if (!err) {
+    console.log('database alice created!');
+  }
+});
+```
