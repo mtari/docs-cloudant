@@ -18,6 +18,14 @@ Specific details about how IBM Cloudant uses HTTP are provided in the [HTTP topi
 # Cloudant Node.js Client
 We use [@cloudant/cloudant](https://www.npmjs.com/package/@cloudant/cloudant) in our applications. This library is the offical Cloudant library for Node.js.
 
+##table of content
+[Database functions](#cloudant_database_functions)
+[Document functions](#cloudant_document_functions)
+[Cloudant views and design](#cloudant_views_and_design)
+[Cloudant query](#cloudant_query)
+
+<a name="cloudant_database_functions"></a>
+
 ## Database functions
 
 ### cloudant.db.create(name, [callback])
@@ -111,6 +119,8 @@ creates a scope where you operate inside name.
 ```
 var alice = cloudant.use('alice');
 ```
+
+<a name="cloudant_document_functions"></a>
 
 ##Document functions
 ###db.insert(doc, [params], [callback])
@@ -217,6 +227,8 @@ alice.list(function(err, body) {
 });
 ```
 
+<a name="cloudant_views_and_design"></a>
+
 ##Cloudant view and design functions
 ###db.view(designname, viewname, [params], [callback])
 calls a view of the specified design with optional query string additions params. if you're looking to filter the view results by key(s) pass an array of keys, e.g { keys: ['key1', 'key2', 'key_n'] }, as params.
@@ -273,6 +285,8 @@ alice.show('characters', 'format_doc', '3621898430', function(err, doc) {
   }
 });
 ```
+
+<a name="cloudant_query"></a>
 
 ##Cloundant query
 ###db.index([callback])
