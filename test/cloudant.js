@@ -113,12 +113,18 @@ describe.skip("Cloudant database functions", () => {
     });
 });
 
-describe("Cloudant document functions", () => {
+describe.only("Cloudant document functions", () => {
     before(async () => {
         const dbName = "testdb";
         await cloudant.db.destroy(dbName);
         await cloudant.db.create(dbName);
         db = cloudant.use(dbName);
+    });
+
+    it("Can get information about database", async () => {
+        const dbName = 'testdb';
+        const result = await cloudant.db.get(dbName);
+        result.db_name.should.eql(dbName);
     });
 
     it("Check if database exists", async () => {
@@ -258,7 +264,7 @@ describe("Cloudant document functions", () => {
     });
 });
 
-describe.only("Query", () => {
+describe("Query", () => {
     before(async () => {
         const dbName = "movies-demo";
         // await cloudant.db.destroy(dbName);
