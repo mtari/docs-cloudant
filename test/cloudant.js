@@ -260,46 +260,36 @@ describe("Cloudant document functions", () => {
 
 describe.only("Query", () => {
     before(async () => {
-        // // TODO could remove the saved db, and then replicate the original
-        // // https://examples.cloudant.com/movies-demo/
-        // const dbName = "movies-demo";
-        // db = cloudant.use(dbName);
-        // done();
-
-        const dbURL = `https://examples.cloudant.com/movies-demo`;
-        const dbReplicaURL = `https://14d0e96f-539c-413a-b1b2-dfa47baaaf92-bluemix:24d869ab9780da53caa7cee957d62359868704f69497f65cce05d4b46d04f633@14d0e96f-539c-413a-b1b2-dfa47baaaf92-bluemix.cloudant.com/movies-demo`;
-        const result = await cloudant.db.replicate(dbURL, dbReplicaURL, { create_target: true });
-        console.log(result);
+        const dbName = "movies-demo";
+        // await cloudant.db.destroy(dbName);
+        // const dbURL = `https://examples.cloudant.com/${dbName}`;
+        // const dbReplicaURL = `https://14d0e96f-539c-413a-b1b2-dfa47baaaf92-bluemix:24d869ab9780da53caa7cee957d62359868704f69497f65cce05d4b46d04f633@14d0e96f-539c-413a-b1b2-dfa47baaaf92-bluemix.cloudant.com/${dbName}`;
+        // await cloudant.db.replicate(dbURL, dbReplicaURL, { create_target: true });
+        db = cloudant.use(dbName);
     });
 
-    it.skip("Can query documents using number (greater than), but can't sort by 'Movie_year' (unless adding 'Movie_year' as a new index).", (done) => {
+    it("Can query documents using Conditional opreator ($gt), but can't sort by 'Movie_year' (unless adding 'Movie_year' as a new index).", async () => {
         // I only need to add this index, because I want to sort by 'Movie_year'
         const year = { name: "Movie_year", type: "json", index: { fields: ["Movie_year"] } };
-        db.index(year, (error, response) => {
-            console.log(error);
-            console.log(response);
+        await db.index(year);
 
-            const query = {
-                "selector": {
-                    "Movie_year": {
-                        "$gt": 2010
-                    }
-                },
-                "fields": ["_id", "_rev", "Movie_year", "Movie_name"],
-                "sort": [{ "Movie_year": "asc" }],
-                "limit": 10,
-                "skip": 0
-            };
+        const query = {
+            "selector": {
+                "Movie_year": {
+                    "$gt": 2010
+                }
+            },
+            "fields": ["_id", "_rev", "Movie_year", "Movie_name"],
+            "sort": [{ "Movie_year": "asc" }],
+            "limit": 10,
+            "skip": 0
+        };
 
-            db.find(query, (error, result) => {
-                console.log("error: " + error);
-                console.log("result: " + JSON.stringify(result));
-                done();
-            });
-        });
+        const result = await db.find(query);
+        result.docs.length.should.eql(10);
     });
 
-    it.skip("Selector basics", () => {
+    it("Can search documents using Combination operators (implicit $and oprator)", async () => {
         const query = {
             "selector": {
                 "Person_name": "Adam Sandler",
@@ -307,14 +297,11 @@ describe.only("Query", () => {
             }
         };
 
-        db.find(query, (error, result) => {
-            console.log("error: " + error);
-            console.log("result: " + JSON.stringify(result));
-            done();
-        });
+        const result = await db.find(query);
+        result.docs.length.should.eql(2);
     });
 
-    it.skip("$and, $or and $eq operators", () => {
+    it("$and, $or and $eq operators", async () => {
         const query = {
             "selector": {
                 "$and": [
@@ -333,14 +320,11 @@ describe.only("Query", () => {
             "fields": ["_id", "_rev", "Movie_year", "Person_name", "Movie_name", "Movie_genre"]
         };
 
-        db.find(query, (error, result) => {
-            console.log("error: " + error);
-            console.log("result: " + JSON.stringify(result));
-            done();
-        });
+        const result = await db.find(query);
+        result.docs.length.should.eql(2);
     });
 
-    it.skip("$and, $or and $eq operators 2", () => {
+    it("$and, $or and $eq operators 2", async () => {
         const query = {
             "selector": {
                 "Movie_year": 2006,
@@ -352,14 +336,11 @@ describe.only("Query", () => {
             "fields": ["_id", "_rev", "Movie_year", "Person_name", "Movie_name", "Movie_genre"]
         };
 
-        db.find(query, (error, result) => {
-            console.log("error: " + error);
-            console.log("result: " + JSON.stringify(result));
-            done();
-        });
+        const result = await db.find(query);
+        result.docs.length.should.eql(4);
     });
 
-    it.skip("$and, $nor and $eq operator", () => {
+    it("$and, $nor and $eq operator", async () => {
         const query = {
             "selector": {
                 "$and": [
@@ -386,14 +367,11 @@ describe.only("Query", () => {
             "fields": ["_id", "_rev", "Movie_year", "Person_name", "Movie_name", "Movie_genre"]
         };
 
-        db.find(query, (error, result) => {
-            console.log("error: " + error);
-            console.log("result: " + JSON.stringify(result));
-            done();
-        });
+        const result = await db.find(query);
+        result.docs.length.should.eql(10);
     });
 
-    it.skip("$and, $not and $eq operator", () => {
+    it("$and, $not and $eq operator", async () => {
         const query = {
             "selector": {
                 "$and": [
@@ -418,17 +396,18 @@ describe.only("Query", () => {
             "fields": ["_id", "_rev", "Movie_year", "Person_name", "Movie_name", "Movie_genre"]
         };
 
-        db.find(query, (error, result) => {
-            console.log("error: " + error);
-            console.log("result: " + JSON.stringify(result));
-            done();
-        });
+        const result = await db.find(query);
+        result.docs.length.should.eql(10);
     });
 });
 
 describe("Cloudant views and design functions", () => {
-    before(() => {
+    before(async () => {
         const dbName = "animaldb";
+        // await cloudant.db.destroy(dbName);
+        // const dbURL = `https://examples.cloudant.com/${dbName}`;
+        // const dbReplicaURL = `https://14d0e96f-539c-413a-b1b2-dfa47baaaf92-bluemix:24d869ab9780da53caa7cee957d62359868704f69497f65cce05d4b46d04f633@14d0e96f-539c-413a-b1b2-dfa47baaaf92-bluemix.cloudant.com/${dbName}`;
+        // await cloudant.db.replicate(dbURL, dbReplicaURL, { create_target: true });
         db = cloudant.use(dbName);
     });
 
@@ -455,8 +434,11 @@ describe("Cloudant views and design functions", () => {
 
 describe("Cloudant search", () => {
     before(() => {
-        // TODO replicate DB
         const dbName = "animaldb";
+        // await cloudant.db.destroy(dbName);
+        // const dbURL = `https://examples.cloudant.com/${dbName}`;
+        // const dbReplicaURL = `https://14d0e96f-539c-413a-b1b2-dfa47baaaf92-bluemix:24d869ab9780da53caa7cee957d62359868704f69497f65cce05d4b46d04f633@14d0e96f-539c-413a-b1b2-dfa47baaaf92-bluemix.cloudant.com/${dbName}`;
+        // await cloudant.db.replicate(dbURL, dbReplicaURL, { create_target: true });
         db = cloudant.use(dbName);
     });
 
@@ -472,80 +454,36 @@ describe("Cloudant search", () => {
 
     it("Can find animals starting with l.", async () => {
         const result = await db.search('views101', 'animals', { q: "l*" });
-        result.rows.forEach(function (doc) {
-            console.log(JSON.stringify(doc));
-        });
+        result.total_rows.should.eql(2);
     });
 
-    it.skip("search 3", (done) => {
-        db.search('views101', 'animals', { q: "class:bird AND diet:carnivore" }, function (err, body) {
-            if (err) {
-                throw err;
-            }
-            body.rows.forEach(function (doc) {
-                console.log(JSON.stringify(doc));
-            });
-            done();
-        });
+    it("Can find Carnivorous birds", async () => {
+        const result = await db.search('views101', 'animals', { q: "class:bird AND diet:carnivore" });
+        result.total_rows.should.eql(1);
     });
 
-    it.skip("search 4", (done) => {
-        db.search('views101', 'animals', { q: "l* AND diet:herbivore" }, function (err, body) {
-            if (err) {
-                throw err;
-            }
-            body.rows.forEach(function (doc) {
-                console.log(JSON.stringify(doc));
-            });
-            done();
-        });
+    it("Can find Herbivores that start with letter l", async () => {
+        const result = await db.search('views101', 'animals', { q: "l* AND diet:herbivore" });
+        result.total_rows.should.eql(1);
     });
 
-    it.skip("search 5", (done) => {
-        db.search('views101', 'animals', { q: "min_length:[1 TO 3] AND diet:herbivore" }, function (err, body) {
-            if (err) {
-                throw err;
-            }
-            body.rows.forEach(function (doc) {
-                console.log(JSON.stringify(doc));
-            });
-            done();
-        });
+    it("Can find medium-sized herbivores", async () => {
+        const result = await db.search('views101', 'animals', { q: "min_length:[1 TO 3] AND diet:herbivore" });
+        result.total_rows.should.eql(2);
     });
 
-    it.skip("search 6", (done) => {
-        db.search('views101', 'animals', { q: "diet:herbivore AND min_length:[-Infinity TO 2]" }, function (err, body) {
-            if (err) {
-                throw err;
-            }
-            body.rows.forEach(function (doc) {
-                console.log(JSON.stringify(doc));
-            });
-            done();
-        });
+    it("Can find Herbivores that are 2m long or less", async () => {
+        const result = await db.search('views101', 'animals', { q: "diet:herbivore AND min_length:[-Infinity TO 2]" });
+        result.total_rows.should.eql(2);
     });
 
-    it.skip("search 7", (done) => {
-        db.search('views101', 'animals', { q: "class:mammal AND min_length:[1.5 TO Infinity]" }, function (err, body) {
-            if (err) {
-                throw err;
-            }
-            body.rows.forEach(function (doc) {
-                console.log(JSON.stringify(doc));
-            });
-            done();
-        });
+    it("Can find Mammals that are at least 1.5m long", async () => {
+        const result = await db.search('views101', 'animals', { q: "class:mammal AND min_length:[1.5 TO Infinity]" });
+        result.total_rows.should.eql(4);
     });
 
-    it.skip("search 8", (done) => {
-        db.search('views101', 'animals', { q: "diet:(herbivore OR omnivore) AND class:mammal" }, function (err, body) {
-            if (err) {
-                throw err;
-            }
-            body.rows.forEach(function (doc) {
-                console.log(JSON.stringify(doc));
-            });
-            done();
-        });
+    it("Can find Mammals who are herbivore or carnivore", async () => {
+        const result = await db.search('views101', 'animals', { q: "diet:(herbivore OR omnivore) AND class:mammal" });
+        result.total_rows.should.eql(7);
     });
 });

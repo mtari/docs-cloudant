@@ -6,6 +6,7 @@ Cloudant's service provides integrated data management, search, and analytics en
 
 **Recommended:**
 You can read more about [Apache CouchDB](https://en.wikipedia.org/wiki/Apache_CouchDB)
+You can also read the [official documentation](https://console.bluemix.net/docs/services/Cloudant/basics/index.html#ibm-cloudant-basics)
 
 # HTTP API
 
