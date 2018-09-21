@@ -542,3 +542,7 @@ db.search('views101', 'animals', { q: "class:mammal AND min_length:[1.5 TO Infin
 ```
 db.search('views101', 'animals', { q: "diet:(herbivore OR omnivore) AND class:mammal" });
 ```
+
+##Examples
+If you want to run the [tests](https://bitbucket.org/mtari/docs-cloudant/src/master/test/cloudant.js), then you need to run `npm install`. Then run
+`npm run test` command to execute the tests. 
