@@ -18,14 +18,6 @@ Specific details about how IBM Cloudant uses HTTP are provided in the [HTTP topi
 # Cloudant Node.js Client
 We use [@cloudant/cloudant](https://www.npmjs.com/package/@cloudant/cloudant) in our applications. This library is the offical Cloudant library for Node.js.
 
-##table of content
-[Database functions](#cloudant_database_functions)
-[Document functions](#cloudant_document_functions)
-[Cloudant views and design](#cloudant_views_and_design)
-[Cloudant query](#cloudant_query)
-
-<a name="cloudant_database_functions"></a>
-
 ## Database functions
 
 ### cloudant.db.create(name, [callback])
@@ -119,8 +111,6 @@ creates a scope where you operate inside name.
 ```
 var alice = cloudant.use('alice');
 ```
-
-<a name="cloudant_document_functions"></a>
 
 ##Document functions
 ###db.insert(doc, [params], [callback])
@@ -227,8 +217,6 @@ alice.list(function(err, body) {
 });
 ```
 
-<a name="cloudant_views_and_design"></a>
-
 ##Cloudant view and design functions
 ###db.view(designname, viewname, [params], [callback])
 calls a view of the specified design with optional query string additions params. if you're looking to filter the view results by key(s) pass an array of keys, e.g { keys: ['key1', 'key2', 'key_n'] }, as params.
@@ -285,8 +273,6 @@ alice.show('characters', 'format_doc', '3621898430', function(err, doc) {
   }
 });
 ```
-
-<a name="cloudant_query"></a>
 
 ##Cloundant query
 ###db.index([callback])
@@ -462,4 +448,97 @@ const query = {
 };
 
 const result = await db.find(query);
+```
+
+##Cloudant Search
+###Creat Search index
+To create a Cloudant Search index, create a design document the normal way you would with Nano, the database .insert() method.
+
+To see all the indexes in a database, call the database .index() method with a callback function.
+
+```
+// Note, you can make a normal JavaScript function. It is not necessary
+// for you to convert it to a string as with other languages and tools.
+var book_indexer = function(doc) {
+  if (doc.author && doc.title) {
+    // This looks like a book.
+    index('title', doc.title);
+    index('author', doc.author);
+  }
+}
+ 
+var ddoc = {
+  _id: '_design/library',
+  indexes: {
+    books: {
+      analyzer: {name: 'standard'},
+      index   : book_indexer
+    }
+  }
+};
+ 
+db.insert(ddoc, function (er, result) {
+  if (er) {
+    throw er;
+  }
+ 
+  console.log('Created design document with books index');
+});
+```
+
+###Search
+To query this index, use the database .search() method. The first argument is the design document name, followed by the index name, and finally an object with your search parameters.
+
+```
+db.search('library', 'books', {q:'author:dickens'}, function(er, result) {
+  if (er) {
+    throw er;
+  }
+ 
+  console.log('Showing %d out of a total %d books by Dickens', result.rows.length, result.total_rows);
+  for (var i = 0; i < result.rows.length; i++) {
+    console.log('Document id: %s', result.rows[i].id);
+  }
+});
+```
+
+###Query examples
+####$text search
+```
+db.search('views101', 'animals', { q: "zebra" });
+```
+
+####JSON search
+```
+db.search('views101', 'animals', { q: "class: bird" });
+```
+
+####Search for something starting with a letter
+```
+db.search('views101', 'animals', { q: "l*" });
+```
+
+####Multiple conditions
+```
+db.search('views101', 'animals', { q: "class:bird AND diet:carnivore" });
+```
+
+```
+db.search('views101', 'animals', { q: "l* AND diet:herbivore" });
+```
+
+```
+db.search('views101', 'animals', { q: "min_length:[1 TO 3] AND diet:herbivore" });
+```
+
+```
+db.search('views101', 'animals', { q: "diet:herbivore AND min_length:[-Infinity TO 2]" });
+```
+
+```
+db.search('views101', 'animals', { q: "class:mammal AND min_length:[1.5 TO Infinity]" });
+```
+
+```
+db.search('views101', 'animals', { q: "diet:(herbivore OR omnivore) AND class:mammal" });
 ```
