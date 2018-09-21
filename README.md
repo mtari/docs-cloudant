@@ -48,7 +48,7 @@ cloudant.db.destroy('alice');
 even though this examples looks sync it is an async function.
 
 ###cloudant.db.list([callback])
-lists all the databases in couchdb
+lists all the databases
 ```
 cloudant.db.list(function(err, body) {
   // body is an array
@@ -69,7 +69,7 @@ cloudant.db.replicate('alice', 'http://admin:password@otherhost.com:5984/alice',
 ```
 
 ###cloudant.db.replication.enable(source, target, [opts], [callback])
-enables replication using the new couchdb api from source to target with options opts. target has to exist, add create_target:true to opts to create it prior to replication. replication will survive server restarts.
+enables replication using the new api from source to target with options opts. target has to exist, add create_target:true to opts to create it prior to replication. replication will survive server restarts.
 ```
 cloudant.db.replication.enable('alice', 'http://admin:password@otherhost.com:5984/alice',
                   { create_target:true }, function(err, body) {
@@ -79,7 +79,7 @@ cloudant.db.replication.enable('alice', 'http://admin:password@otherhost.com:598
 ```
 
 ###cloudant.db.replication.query(id, [opts], [callback])
-queries the state of replication using the new couchdb api. id comes from the response given by the call to enable.
+queries the state of replication using the new api. id comes from the response given by the call to enable.
 ```
 cloudant.db.replication.enable('alice', 'http://admin:password@otherhost.com:5984/alice',
                    { create_target:true }, function(err, body) {
@@ -93,7 +93,7 @@ cloudant.db.replication.enable('alice', 'http://admin:password@otherhost.com:598
 ```
 
 ###cloudant.db.replication.disable(id, [opts], [callback])
-disables replication using the new couchdb api. id comes from the response given by the call to enable.
+disables replication using the new api. id comes from the response given by the call to enable.
 ```
 cloudant.db.replication.enable('alice', 'http://admin:password@otherhost.com:5984/alice',
                    { create_target:true }, function(err, body) {
@@ -143,7 +143,7 @@ alice.insert({ _id: 'myid', _rev: '1-23202479633c2b380f79507a776743d5', crazy: f
 ```
 
 ###db.destroy(docname, rev, [callback])
-removes revision rev of docname from couchdb.
+removes revision rev of docname.
 ```
 alice.destroy('rabbit', '3-66c01cdf99e84c83a9b3fe65b88db8c0', function(err, body) {
   if (!err)
@@ -179,7 +179,7 @@ alice.copy('rabbit', 'rabbit2', { overwrite: true }, function(err, _, headers) {
 ```
 
 ###db.bulk(docs, [params], [callback])
-bulk operations(update/delete/insert) on the database, refer to the couchdb doc.
+bulk operations(update/delete/insert) on the database, refer to the doc.
 ```
 const testData = [
     {
@@ -205,7 +205,7 @@ db.bulk({ docs: testData }, (error, result) => {
 });
 ```
 
-#db.list([params], [callback])
+###db.list([params], [callback])
 list all the docs in the database with optional query string additions params.
 ```
 alice.list(function(err, body) {
@@ -215,4 +215,237 @@ alice.list(function(err, body) {
     });
   }
 });
+```
+
+##Cloudant view and design functions
+###db.view(designname, viewname, [params], [callback])
+calls a view of the specified design with optional query string additions params. if you're looking to filter the view results by key(s) pass an array of keys, e.g { keys: ['key1', 'key2', 'key_n'] }, as params.
+```
+alice.view('characters', 'crazy_ones', {
+  'key': 'Tea Party',
+  'include_docs': true
+}, function(err, body) {
+  if (!err) {
+    body.rows.forEach(function(doc) {
+      console.log(doc.value);
+    });
+  }
+});
+```
+```
+alice.view('characters', 'soldiers', {
+  'keys': ['Hearts', 'Clubs']
+}, function(err, body) {
+  if (!err) {
+    body.rows.forEach(function(doc) {
+      console.log(doc.value);
+    });
+  }
+});
+```
+
+When params is not supplied, or no keys are specified, it will simply return all docs in the view.
+```
+alice.view('characters', 'crazy_ones', function(err, body) {
+  if (!err) {
+    body.rows.forEach(function(doc) {
+      console.log(doc.value);
+    });
+  }
+});
+```
+```
+alice.view('characters', 'crazy_ones', { include_docs: true }, function(err, body) {
+  if (!err) {
+    body.rows.forEach(function(doc) {
+      console.log(doc.value);
+    });
+  }
+});
+```
+
+###db.show(designname, showname, doc_id, [params], [callback])
+calls a show function of the specified design for the document specified by doc_id with optional query string additions params.
+```
+alice.show('characters', 'format_doc', '3621898430', function(err, doc) {
+  if (!err) {
+    console.log(doc);
+  }
+});
+```
+
+##Cloundant query
+###db.index([callback])
+To see all the indexes in a database, call the database .index() method with a callback function.
+
+```
+db.index(function(er, result) {
+  if (er) {
+    throw er;
+  }
+ 
+  console.log('The database has %d indexes', result.indexes.length);
+  for (var i = 0; i < result.indexes.length; i++) {
+    console.log('  %s (%s): %j', result.indexes[i].name, result.indexes[i].type, result.indexes[i].def);
+  }
+ 
+  result.should.have.a.property('indexes').which.is.an.Array;
+  done();
+});
+```
+
+To create an index, use the same .index() method but with an extra initial argument: the index definition. For example, to make an index on middle names in the data set:
+```
+var first_name = {name:'first-name', type:'json', index:{fields:['name']}}
+db.index(first_name, function(er, response) {
+  if (er) {
+    throw er;
+  }
+ 
+  console.log('Index creation result: %s', response.result);
+});
+```
+
+###db.find(selector, [callback])
+To query using the index, use the .find() method.
+```
+db.find({selector:{name:'Alice'}}, function(er, result) {
+  if (er) {
+    throw er;
+  }
+ 
+  console.log('Found %d documents with name Alice', result.docs.length);
+  for (var i = 0; i < result.docs.length; i++) {
+    console.log('  Doc id: %s', result.docs[i]._id);
+  }
+});
+```
+
+###Using Conditional and Combination operators
+####Greater than operator.
+```
+const query = {
+    "selector": {
+        "Movie_year": {
+            "$gt": 2010
+        }
+    },
+    "fields": ["_id", "_rev", "Movie_year", "Movie_name"],
+    "sort": [{ "Movie_year": "asc" }],
+    "limit": 10,
+    "skip": 0
+};
+
+const result = await db.find(query);
+```
+
+####Implicit $and operator.
+```
+const query = {
+    "selector": {
+        "Person_name": "Adam Sandler",
+        "Movie_year": 2003
+    }
+};
+
+const result = await db.find(query);
+```
+
+####$and, $or and $eq operators
+```
+const query = {
+    "selector": {
+        "$and": [
+            {
+                "Person_name": {
+                    "$or": ["Adam Sandler", "Abigail Breslin"]
+                }
+            },
+            {
+                "Movie_genre": {
+                    "$eq": "CDY"
+                }
+            }
+        ]
+    },
+    "fields": ["_id", "_rev", "Movie_year", "Person_name", "Movie_name", "Movie_genre"]
+};
+
+const result = await db.find(query);
+```
+
+####$and, $nor and $eq operator
+```
+const query = {
+    "selector": {
+        "Movie_year": 2006,
+        "$or": [
+            { "Person_name": "Adam Sandler" },
+            { "Person_name": "Abigail Breslin" }
+        ]
+    },
+    "fields": ["_id", "_rev", "Movie_year", "Person_name", "Movie_name", "Movie_genre"]
+};
+
+const result = await db.find(query);
+```
+
+####$and, $nor and $eq operator
+```
+const query = {
+    "selector": {
+        "$and": [
+            {
+                "Person_name": {
+                    "$or": ["Adam Sandler", "Abigail Breslin"]
+                }
+            },
+            {
+                "Movie_year": {
+                    "$gte": 2000
+                },
+                "Movie_year": {
+                    "$lte": 2010
+                },
+                "$nor": [
+                    { "Movie_year": 2001 },
+                    { "Movie_year": 2003 },
+                    { "Movie_year": 2006 }
+                ]
+            }
+        ]
+    },
+    "fields": ["_id", "_rev", "Movie_year", "Person_name", "Movie_name", "Movie_genre"]
+};
+
+const result = await db.find(query);
+```
+
+####$and, $not and $eq operator
+```
+const query = {
+    "selector": {
+        "$and": [
+            {
+                "Person_name": {
+                    "$or": ["Adam Sandler", "Abigail Breslin"]
+                }
+            },
+            {
+                "Movie_year": {
+                    "$gte": 2000
+                },
+                "Movie_year": {
+                    "$lte": 2010
+                },
+                "$not": {
+                    "Movie_year": 2003
+                }
+            }
+        ]
+    },
+    "fields": ["_id", "_rev", "Movie_year", "Person_name", "Movie_name", "Movie_genre"]
+};
+
+const result = await db.find(query);
 ```
