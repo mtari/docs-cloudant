@@ -113,7 +113,7 @@ describe.skip("Cloudant database functions", () => {
     });
 });
 
-describe.only("Cloudant document functions", () => {
+describe("Cloudant document functions", () => {
     before(async () => {
         const dbName = "testdb";
         await cloudant.db.destroy(dbName);
@@ -407,7 +407,7 @@ describe("Query", () => {
     });
 });
 
-describe("Cloudant views and design functions", () => {
+describe.only("Cloudant views and design functions", () => {
     before(async () => {
         const dbName = "animaldb";
         // await cloudant.db.destroy(dbName);
@@ -435,6 +435,17 @@ describe("Cloudant views and design functions", () => {
     it("Can query views without params.", async () => {
         const result = await db.view('views101', 'diet');
         result.rows.length.should.eql(10);
+    });
+
+    it.only("Can query views with advanced params.", async () => {
+        const result = await db.view('views101', 'diet', {
+            'keys': ['carnivore', 'herbivore'],
+            'include_docs': true, 
+            'limit': 3,
+            'skip': 1,
+            'descending': true
+        });
+        result.rows.length.should.eql(3);
     });
 });
 
